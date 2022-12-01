@@ -1,0 +1,221 @@
+\begin{refsection}
+
+\chapter{Correspondences Between Function Spaces}
+\label{chap:correspondences}
+
+\begin{tcolorbox}
+This chapter introduces various useful correspondences between kernel methods, Gaussian processes and neural networks. The material is expositional and is included for the reader's aid.
+\end{tcolorbox}
+
+Kernel methods, Gaussian processes and neural networks were introduced in Chapter \ref{chap:functionspaces} as different philosophical approaches to constructing spaces of functions that may be used to fit data. Kernel methods construct functions by linearly combining kernel basis functions, and are thus amenable to a particular kind of functional analysis. Gaussian processes draw functions from a probability measure, allowing the laws of probability to be applied to both analyse complexity and fit data. Neural networks eschew these analytical considerations, preferring a very flexible means of building functions by composing parameterised operators that may be fit to data via gradient descent.
+
+It may seem surprising, then, that multiple connections exist between these seemingly disparate spaces of functions. These \textit{correspondences} provide a promising route toward better understanding each function space individually.
+
+\section{GP posterior mean is a kernel interpolator}
+\label{sec:gp-k-mean}
+
+One of the attractive features of a Gaussian process is that, after observing data, a full posterior distribution over possible explanations of the data may be obtained. But sometimes this full posterior distribution is overkill---for example, in some situations all that is needed is the single \textit{best prediction} for a fresh test input. In these situations, it may be enough to simply return the mean of the posterior distribution (solid blue line in Figure \ref{fig:gp}). 
+
+Perhaps surprisingly, the mean of a Gaussian process posterior distribution is equivalent to the kernel interpolator of minimum RKHS norm, where the kernel is set to to the covariance function of the Gaussian process. Formally, suppose that $f\sim\gp(0,k)$. Conditioned on $f$ interpolating a training set $S=(X,Y)$, by Theorem \ref{thm:gp-cond} the mean prediction on a fresh input $x$ is given by:
+\begin{equation}\label{eq:gp-cond-mean}
+    \Expect\left[f(x)\mid f_X = Y\right] = K_{xX}K_{XX}^{-1}Y,
+\end{equation}
+But by Theorem \ref{thm:min-rkhs}, this is equivalent to the minimum RKHS norm kernel interpolator of $(X,Y)$ with kernel $k$.
+
+\section{GP posterior variance bounds the error of kernel interpolation}
+
+A slightly more subtle relationship between Gaussian processes and kernel methods connects the posterior variance of a Gaussian process to the worst case error of kernel interpolation. This correspondence is based on the fact that the Gaussian process posterior variance admits the following geometric interpretation in the corresponding RKHS:
+\begin{lemma}[Distance between a point and a subspace]\label{lem:var-geom} Consider an RKHS induced by kernel $k:\mathcal{X}\times\mathcal{X}\to\R$. Given a set of inputs $X=\{x_1,...,x_m\}$ and fresh input $x$, the shortest distance between the kernel basis function centred on $x$ and the span of the kernel basis functions centred on points in $X$ is given by:
+\begin{align}\label{eq:k-gp-var}
+    \mathrm{dist}^2\big(k(\cdot,x), \mathrm{span}\{k(\cdot,x_i)\}_{i=1}^m\big)&\coloneqq \min_{\alpha\in\R^m}\left\|k(\cdot,x)-\sum_{i=1}^m\alpha_i\, k(\cdot,x_i)\right\|_{\mathrm{RKHS}}^2 \nonumber\\ &= K_{xx} - K_{xX}K_{XX}^{-1}K_{Xx}.
+\end{align}
+\end{lemma}
+In words: the Gaussian process posterior variance (right-hand side of Equation \ref{eq:k-gp-var}) measures the shortest RKHS-distance from the kernel basis function centred at $x$ and the span of the kernel basis functions centred on the training points.
+\begin{proof}[Proof of Lemma \ref{lem:var-geom}] Evaluating the RKHS norm for arbitrary $\alpha \in \R^m$ yields:
+    \begin{equation*}
+        \left\|k(\cdot,x)-\sum_{i=1}^m\alpha_i\, k(\cdot,x_i)\right\|_{\mathrlap{\mathrm{RKHS}}}^{\mathrlap{2}} = k_{xx} - 2\cdot\alpha^\top K_{Xx} + \alpha^\top K_{XX}\alpha.
+    \end{equation*}
+    Setting the derivative with respect to $\alpha$ to zero yields that $K_{Xx}=K_{XX}\alpha$ and hence the RKHS norm is minimised by setting $\alpha = K_{XX}^{-1}K_{Xx}$. Substituting this result back into the expression for the RKHS norm yields the result.
+\end{proof}
+
+With Lemma \ref{lem:var-geom} in hand, the next theorem follows readily. The result is related to Corollary 3.11 of \citet{Kanagawa2018GaussianPA}.
+
+\begin{theorem}[Error of kernel interpolation] Given a function $g$ in an RKHS induced by kernel $k$ and any set of distinct inputs $X$, the deviation between $g$ and the minimum RKHS norm interpolator $f_\star$ of $(X,g(X))$ satisfies:
+\begin{equation}
+    \abs{g(x) - f_{\star}(x)} \leq \sqrt{\norm{g}_\mathrm{RKHS}^2-\norm{f_\star}_\mathrm{RKHS}^2} \cdot \sqrt{K_{xx} - K_{xX}K_{XX}^{-1}K_{Xx}}.
+\end{equation}
+\end{theorem}
+\begin{proof} By the reproducing property, the fact that $g$ and $f_\star$ agree on the training points, and the Cauchy-Schwarz inequality:
+    \begin{align*}
+        \abs{g(x) - f_{\star}(x)} &= \left|\langle g - f_\star, k(\cdot,x)\rangle_\mathrm{RKHS}\right| \\
+        &= \left|\langle g - f_\star, k(\cdot,x) - \sum_{i=1}^m \alpha_i\,k(\cdot,x_i)\rangle_\mathrm{RKHS}\right| \text{ for all } \alpha\in\R^m\\
+        &\leq \left\|g-f_\star\right\|_\mathrm{RKHS} \cdot \min_{\alpha\in\R^m} \left\|k(\cdot,x) - \sum_{i=1}^m \alpha_i\,k(\cdot,x_i)\right\|_{\mathrlap{\mathrm{RKHS}}}.
+    \end{align*}
+    The result follows by observing that $\left\|g\right\|_\mathrm{RKHS}^2 = \left\|f_\star\right\|_\mathrm{RKHS}^2 +  \left\|g-f_\star\right\|_\mathrm{RKHS}^2$ by Equation \ref{eq:orthog-functions}, and an application of Lemma \ref{lem:var-geom}.
+\end{proof}
+
+In words: if one is approximating an unknown function $g$ by the the minimum RKHS norm interpolator $f_\star$ of a set of samples from $g$, then the error of this approximation is bounded by the posterior standard deviation of the corresponding Gaussian process fit to those samples, scaled by a constant depending on the difference in RKHS norm between $g$ and approximation $f_\star$.
+
+\section{Making the GP posterior concentrate on a kernel interpolator}
+
+A particular kind of aggregate Gaussian process prediction---the posterior mean---is directly available via Equation \ref{eq:gp-cond-mean}. As mentioned in Section \ref{sec:gp-k-mean}, the posterior mean may suffice for practical applications and often one may not bother computing the posterior variance.
+
+But for other function spaces, it may be the case that the posterior distribution may only be accessed through samples---and these samples may be expensive to obtain. In fact, Chapter \ref{chap:bpm} will argue that a neural network trained to fit data by gradient descent is analogous to a \textit{single draw} from a Gaussian process posterior distribution. In this situation, computing the posterior mean would involve averaging over many samples, which might be prohibitively expensive.
+
+The following theorem observes that, for Gaussian processes, this issue may be circumvented---by forcing the entire posterior distribution to concentrate on its mean. In this case, \textit{all} posterior samples may be trusted to faithfully report the mean. This mean is itself a kernel interpolator by the results of Section \ref{sec:gp-k-mean}.
+
+\begin{theorem}[Posterior concentration]\label{thm:force-gp} Given a kernel $k$ and a training sample $(X,Y)$, define two constants: a ``margin'' $\gamma>0$ and a ``normalisation'' $\tau^2>0$. Sample a function $f\sim\gp(0,\tau^2\cdot k)$ conditioned on $f$ interpolating $(X,\gamma\cdot Y)$:
+\begin{equation}
+    f\sim\gp(0, \tau^2 \cdot k \mid f_X=\gamma\cdot Y ).
+\end{equation}
+In the limit that the ``normalised margin'' $\gamma / \tau \to \infty$, then the rescaled function $f/\gamma$ converges to the posterior mean:
+\begin{equation}
+    f(x)/\gamma =K_{xX}K_{XX}^{-1}Y, \; \text{with probability one}.
+\end{equation}
+\end{theorem}
+\begin{proof} By Theorem \ref{thm:gp-cond}, the sampled function $f$ evaluated at $x$ follows:
+\begin{equation*}
+    f(x) \sim \normal\left(K_{xX}K_{XX}^{-1} (\gamma \cdot Y),\tau^2\cdot (K_{xx}-K_{xX}K_{XX}^{-1}K_{Xx})\right).
+\end{equation*}
+Dividing through by $\gamma$ then yields:
+\begin{equation*}
+    f(x)/\gamma \sim \normal\left(K_{xX}K_{XX}^{-1} Y,\frac{\tau^2}{\gamma^2}\cdot (K_{xx}-K_{xX}K_{XX}^{-1}K_{Xx})\right).
+\end{equation*}
+Taking the normalised margin $\gamma/\tau \to \infty$ causes the variance to vanish.
+\end{proof}
+
+The language used in this theorem statement surrounding ``normalised margin'' is intended to evoke the concepts of normalised margin given in Definitions \ref{def:spec-norm-margin} and \ref{def:frob-norm-margin}. This foreshadows a contribution of Chapter \ref{chap:bpm}, where a formal connection is made between Theorem \ref{thm:force-gp} and a notion of normalised margin in neural networks. This formal connection leverages a correspondence between neural networks and Gaussian processes, which is presented in the next section.
+
+\section{Neural network--Gaussian process correspondence}
+\label{sec:nngp}
+
+Informally, the \textit{neural network--Gaussian process} (NNGP) correspondence states that the space of functions realised by a sufficiently wide neural network is equivalent to a Gaussian process. Since a key feature of a Gaussian process is that it assigns probabilities to functions, this informal statement is not yet fully meaningful. What is needed is a means of assigning probabilities to the functions realised by a neural network. The key idea is to consider randomly sampling the network weights to obtain a distribution over neural network functions. This leads to the more accurate---but still informal---statement:
+\begin{quote}
+    The distribution over functions realised by a wide enough neural network with randomly drawn weights is a Gaussian process.
+\end{quote}
+
+While this correspondence may seem surprising, the mechanism by which it works ends up being fairly simple. Consider the $l$th layer of a neural network:
+\begin{equation}\label{eq:nn-layer}
+    f_l(x) = W_l\cdot \phi(f_{l-1}(x)),
+\end{equation}
+where $x\in\R^{d_0}$ is the network input, $f_l(x)\in\R^{d_l}$ is the layer output, $W_l\in\R^{d_l\times d_{l-1}}$ is the weight matrix, $\phi$ is the nonlinearity and $f_{l-1}(x)\in\R^{d_{l-1}}$ is the layer input. Suppose that the different components of $f_{l-1}(x)$ are iid random variables and that the entries of weight matrix $W_l$ are also drawn iid. Then the components of the output $f_l(x)$, being the sum over a large number of iid contributions, are themselves iid Gaussian by the central limit theorem.
+
+This idea is formalised in the following lemma, essentially due to \citet{radford}.
+
+\begin{lemma}[NNGP correspondence]\label{lem:nngp}
+
+For the neural network layer given by Equation \ref{eq:nn-layer}, if the following conditions hold:
+\begin{enumerate}[label=(\roman*)]
+    \item Inputs: For every network input $x \in \R^{d_0}$, the components of the layer input $f_{l-1}(x)\in\R^{d_{l-1}}$ are iid with finite first and second moment.
+    \item Weights: Entries of $W_l$ are iid with zero mean and variance $\sigma^2/d_{l-1}<\infty$.
+    \item Nonlinearity: For any random variable $z$ with finite first and second moment, $\phi(z)$ also has finite first and second moment.
+\end{enumerate}
+Then, in the limit of width $d_{l-1}\rightarrow\infty$, the distribution of layer outputs satisfies:
+\begin{enumerate}
+    \item IID outputs. For every input $x \in \R^{d_0}$, the components of the layer output $f_l(x)$ for that input are iid with finite first and second moment.
+    \item Gaussian outputs. For any collection of $m$ network inputs $x_1, ..., x_m$, the output components $f_l^i(x_1),...,f_l^i(x_m)$ are jointly Gaussian for $i=1,...,d_l$.
+\end{enumerate}
+\end{lemma}
+
+Condition (ii) is satisfied simply by sampling the network weights iid Gaussian, say. Similarly, condition (iii) is easy to check for a given nonlinearity. Condition (i) on the layer inputs seems the most non-trivial. But notice that the lemma propagates this condition to the next layer via entailment 1). This means that provided condition (i) holds at the first layer, then recursive application of the lemma implies that condition (i) will hold at all layers.
+
+Entailment 2) is equivalent to saying that the $i$th component of the layer output forms a Gaussian process (Definition \ref{def:gp}). The kernel of this Gaussian process depends on the specific architecture of the network preceding the $l$th layer. For example, the kernel for multilayer perceptrons with relu nonlinearity is given by Theorem \ref{thm:relu}. But first, a proof of the lemma is given.
+
+\begin{proof}[Proof of Lemma \ref{lem:nngp}] 
+To prove entailment 1), write output $f_l(x)\in\R^{d_l}$ as:
+\begin{gather}\label{eq:z1}
+    f_l(x) = \sum_{j=1}^{d_{l-1}} \left[W_l^{1j}, ..., W_l^{d_{l}j} \right]\cdot\phi \left(f_{l-1}^j(x)\right)\eqqcolon\sum_{j=1}^{d_{l-1}}v_j.
+\end{gather}
+By conditions (i) and (ii), the summands $v_j$ in Equation \ref{eq:z1} are iid random vectors. To apply a central limit theorem, these random vectors must have finite mean and variance. Since the weights and inputs are independent, the mean is finite and is given by:
+\begin{equation*}
+    \Expect[v_j] = \Expect [W_l^{1j},...,\Expect W_l^{d_l j}] \cdot \Expect [\phi(f_{l-1}^j(x))] = 0 \cdot \Expect [\phi(f_{l-1}^j(x))] = 0.
+\end{equation*}
+This result relies on the quantity $\Expect [\phi(f_{l-1}^j(x))]$ being finite by conditions (i) and (iii). Similarly, the variance is given by:
+\begin{equation*}
+    \Expect[v_j^iv_j^k] = \Expect [W_l^{ij}W_l^{kj}] \cdot \Expect [\phi(f_{l-1}^j(x))^2] = \delta_{ik}\cdot\sigma^2/d_{l-1} \cdot \Expect [\phi(f_{l-1}^j(x))^2],
+\end{equation*}
+where $\delta_{ik}$ is the Kronecker delta. Since $\sigma^2/d_{l-1}<\infty$ and, by conditions (i) and (iii), the quantity $\Expect [\phi(f_{l-1}^j(x))^2]$ appearing on the right-hand side is finite too, then the variance of random vector $v_j$ is finite. In turn, by the multivariate central limit theorem \citep{vaart_1998}, in the limit that $d_{l-1}\to\infty$, the layer output $f_l(x)\sim\normal(0, \sigma^2 \cdot \Expect [\phi(f_{l-1}^1(x))^2]\cdot\Id)$. In particular, this implies that the components of $f_l(x)$ are iid with finite first and second moment.
+
+Entailment 2) is established by a similar argument that considers the $i$th component of the layer output $f_l$ projected on to $m$ samples $X=\{x_1,...,x_m\}$:
+\begin{gather}\label{eq:z2}
+    (f_l^{i})_X = \sum_{j=1}^{d_{l-1}} W_l^{ij}\cdot\left[\phi \left(f_{l-1}^j(x_1)\right), ..., \phi \left(f_{l-1}^j(x_m)\right) \right].
+\end{gather}
+Again, by combining conditions (i), (ii) and (iii), the summands in Equation \ref{eq:z2} are iid random vectors with finite mean and finite covariance. Then as $d_{l-1}\rightarrow\infty$, the distribution of $(f_l^{i})_X$ is multivariate Gaussian---again by the multivariate central limit theorem. This completes the proof.
+\end{proof}
+
+Working out the details of the neural network--Gaussian process correspondence for a specific network architecture involves computing the Gaussian process kernel that is induced by the given network topology and choice of nonlinearity. The following theorem demonstrates this process for the \textit{model organism} of this thesis: the multilayer perceptron with relu nonlinearity. The essence of the following theorem appears in a paper by \citet{lee2018deep}, building on the work of \citet{choandsaul}.
+
+\begin{theorem}[NNGP for relu networks]\label{thm:relu} Consider a multilayer perceptron $f$ (Definition \ref{def:mlp}) with $L$ layers, output dimension $d_L=1$ and nonlinearity:
+\begin{equation}\label{eq:scaled-relu}
+    \phi(\cdot) = \sqrt{2}\cdot\max(0,\cdot).
+\end{equation}
+For each layer $l=1,...,L$, sample weight entries $W_l^{ij} \overset{\mathrm{iid}}{\sim} \normal(0,1/d_{l-1})$. Consider any collection $X$ of $m$ inputs constrained to the hypersphere of radius $\sqrt{d_0}$: $x_1, ..., x_m\in\sqrt{d_0}\cdot \Sph^{d_0-1}$. Then, as hidden layer widths $d_1,...,d_{L-1}\to \infty$, the network outputs $f(x_1),...,f(x_m)$ are jointly Gaussian with:
+\begin{align}
+\Expect \left[ f(x_i) \right] &= 0;\\
+\Expect \smash{\left[ f(x_i)^2 \right]} &= 1;\\ 
+\Expect \left[ f(x_i) f(x_j)\right] &= \underbrace{h \circ ... \circ h}_{L-1\text{  times}}\smash{\left(\frac{x_i^\top x_j}{d_0}\right)}; \label{eq:comp-arccos}
+\end{align}
+for all $x_i, x_j \in X$, and where $h(t)\coloneqq  \tfrac{1}{\pi}\left[\sqrt{1-t^2} + t\cdot(\pi- \arccos t)\right]$.
+\end{theorem}
+
+The kernel appearing in Equation \ref{eq:comp-arccos} is the \textit{compositional arccosine kernel} \citep{choandsaul}. This kernel will be used in Chapter \ref{chap:bpm} to study generalisation in the multilayer perceptron.
+
+\begin{proof} First, Lemma \ref{lem:nngp} will be applied recursively over the layers of the network. Condition (ii) of Lemma \ref{lem:nngp} holds at all layers with $\sigma^2 = 1$, and condition (iii) holds trivially for the scaled relu nonlinearity of Equation \ref{eq:scaled-relu}. Condition (i) holds at the first layer since, in the notation of Equation \ref{eq:nn-layer},
+\begin{align}
+\Expect[f_1(x)] &= \Expect[W_1 \cdot x] = \Expect[W_1] \cdot x = 0, \nonumber\\ \Expect[(f_1^i(x))^2] &= \sum_{j,k=1}^{d_0} \Expect[W_1^{ij}W_1^{ik}] \cdot x^j x^k = \sum_{j=1}^{d_0} \Expect[(W_1^{ij})^2] \cdot (x^j)^2 = 1, \label{eq:var-layer-1}
+\end{align}
+and $\phi$ preserves both iid-ness and finite-ness of the first and second moment. Then, by recursive application of Lemma \ref{lem:nngp}, the outputs at any layer are jointly Gaussian. All that remains is to compute their moments.
+
+For the $i$th component of layer $l$, the first moment $\Expect \left[ f_l^{i}(x)\right] = 0$. This can be seen by taking the expectation of Equation \ref{eq:nn-layer} and using the fact that the $W_l^{ij}$ are independent of the layer inputs and have mean zero.
+    
+    Since any two layer outputs $f_l^i(x)$ and $f_l^i(x^\prime)$ are jointly Gaussian with mean zero, their distribution is completely described by the $2\times 2$ covariance matrix:
+    \begin{align*}
+        \Sigma_{l}(x,x^\prime)&\coloneqq 
+          \begin{bmatrix}
+            \rho_{l}(x,x) & \rho_{l}(x,x^\prime)  \\
+            \rho_{l}(x,x^\prime) & \rho_{l}(x^\prime,x^\prime)
+          \end{bmatrix},
+    \end{align*}
+    where $\rho_{l}(x,x^\prime)\coloneqq\Expect \left[ f_l^i(x) f_l^i(x^\prime)\right]$ and the index $i$ is unimportant since different components in the same layer have identical distributions.
+    
+    The theorem statement will follow from an effort to express $\Sigma_l(x,x^\prime)$ in terms of $\Sigma_{l-1}(x,x^\prime)$ and then recursing back through the network. By Equation \ref{eq:nn-layer} and independence of the $W_l^{ij}$, the covariance $\rho_l(x,x^\prime)$ may be expressed as: 
+    \begin{equation}\label{eq:covar}
+        \rho_{l}(x,x^\prime) = \Expect \left[ \phi \left(f_{l-1}^j(x)\right) \phi \left(f_{l-1}^j(x^\prime)\right) \right],
+    \end{equation}
+    where $j$ indexes an arbitrary component of layer $l-1$. To make progress, it helps to first evaluate:
+    \begin{gather*}
+        \rho_l(x,x) = \Expect \left[ \phi \left(f_{l-1}^j(x)\right)^2 \right] = \half \cdot 2 \cdot \rho_{l-1}(x,x),
+    \end{gather*}
+    which follows by the definition of $\phi$ and symmetry of the Gaussian expectation around zero. Then, by recursion:
+    \begin{gather*}
+        \rho_{l}(x,x) = \rho_{l-1}(x,x) =... = \rho_{1}(x,x) = 1,
+    \end{gather*}
+    where the final equality holds because $\Expect[(f_1^i(x))^2] = 1$ by Equation \ref{eq:var-layer-1}. Then the covariance $\Sigma_{l-1}$ at layer $l-1$ simplifies to:
+    \begin{equation*}
+        \Sigma_{l-1}(x,x^\prime)=
+          \begin{bmatrix}
+            1 & \rho_{l-1}(x,x^\prime)  \\
+            \rho_{l-1}(x,x^\prime) & 1
+          \end{bmatrix}.
+    \end{equation*}
+    Equation \ref{eq:covar} may now be used to express $\rho_l(x,x^\prime)$ in terms of $\rho_{l-1}(x,x^\prime)$. Dropping the $(x,x^\prime)$ indexing for brevity:
+    \begin{align*}
+        \rho_l &= \Expect_{u,v\sim \mathcal{N}\left(0,\Sigma_{l-1}\right)} \left[ \phi \left(u\right) \phi \left(v\right) \right] \\
+        &= \frac{1}{\pi \sqrt{1-\rho_{l-1}^2}} \iint_{u,v\geq0}\diff{u}\idiff{v}\, \exp\left[-\frac{u^2 - 2 \rho_{l-1} uv + v^2}{2(1-\rho_{l-1}^2)}\right]uv.
+    \end{align*}
+    By making the substitution $\rho_{l-1}=\cos\theta$, this integral becomes equivalent to $\frac{1}{\pi}\cdot J_1(\theta)$ as expressed in \citet{choandsaul}'s Equation 15. Substituting in the evaluation of this integral \citep[Equation 6]{choandsaul}, one obtains:
+    \begin{equation}\label{eq:recur}
+      \rho_{l}(x,x^\prime) = h(\rho_{l-1}(x,x^\prime)).
+    \end{equation}
+    
+    What remains is to evaluate $\rho_1(x,x^\prime)$. Since $\Expect\left[W_1^{ij}W_1^{ik}\right] = \delta_{jk}/d_0$, this equals:
+    \begin{align*}
+        \rho_1(x,x^\prime) &\coloneqq  \Expect \left[ f_1^i(x) f_1^i(x^\prime)\right] = \sum_{j,k=1}^{d_0} \Expect\left[W_1^{ij}W_1^{ik}\right] x^j (x^\prime)^k = \frac{x^\top x^\prime}{d_0}.
+    \end{align*}
+    The proof is completed by combining this expression for $\rho_1(x,x^\prime)$ with the recurrence relation in Equation \ref{eq:recur}.
+\end{proof}
+
+This completes the chapter on correspondences between function spaces.
+
+\printbibliography[heading=subbibliography]
+\end{refsection}

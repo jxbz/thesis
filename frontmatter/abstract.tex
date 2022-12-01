@@ -1,0 +1,13 @@
+\begin{abstract}
+    The goal of this thesis is to develop the optimisation and generalisation theoretic foundations of learning in artificial neural networks. The thesis tackles two central questions. Given training data and a network architecture:
+    \begin{enumerate}
+        \item Which weight setting will generalise best to unseen data, and why?
+        \item What optimiser should be used to recover this weight setting?
+    \end{enumerate}
+    
+    On optimisation, an essential feature of neural network training is that the network weights affect the loss function only indirectly through their appearance in the network architecture. This thesis proposes a three-step framework for deriving novel ``architecture aware'' optimisation algorithms. The first step---termed \textit{functional majorisation}---is to majorise a series expansion of the loss function in terms of functional perturbations. The second step is to derive \textit{architectural perturbation bounds} that relate the size of functional perturbations to the size of weight perturbations. The third step is to substitute these architectural perturbation bounds into the functional majorisation of the loss and to obtain an optimisation algorithm via minimisation. This constitutes an application of the \textit{majorise-minimise meta-algorithm} to neural networks.
+    
+    On generalisation, a promising recent line of work has applied PAC-Bayes theory to derive non-vacuous generalisation guarantees for neural networks. Since these guarantees control the average risk of ensembles of networks, they do not address which individual network should generalise best. To close this gap, the thesis rekindles an old idea from the kernels literature: the \textit{Bayes point machine}. A Bayes point machine is a single classifier that approximates the aggregate prediction of an ensemble of classifiers. Since aggregation reduces the variance of ensemble predictions, Bayes point machines tend to generalise better than other ensemble members. The thesis shows that the space of neural networks consistent with a training set concentrates on a Bayes point machine if both the network width and normalised margin are sent to infinity. This motivates the practice of returning a wide network of large normalised margin.
+    
+    Potential applications of these ideas include novel methods for uncertainty quantification, more efficient numerical representations for neural hardware, and optimisers that transfer hyperparameters across learning problems.
+\end{abstract}

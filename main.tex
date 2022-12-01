@@ -1,0 +1,50 @@
+\documentclass[12pt]{caltech/caltech_thesis}
+
+\PassOptionsToPackage{pdfsubject={Caltech PhD thesis}}{hyperref}
+\PassOptionsToPackage{pdfkeywords={neural networks, kernel methods, Gaussian processes, optimisation, generalisation, majorise-minimise, functional majorisation, architectural perturbation bounds, Bayes point machines, normalised margin, hyperparameter transfer, neural hardware, uncertainty quantification}}{hyperref}
+
+\input{preamble}
+\input{macros}
+
+\addbibresource{refs.bib}
+
+\begin{document}
+
+\unilogo{caltech/caltech.pdf}
+\input{frontmatter/title}
+\input{frontmatter/acknowledgements}
+\input{frontmatter/abstract}
+\newpage\tableofcontents
+\listoffigures
+\input{frontmatter/notation}
+
+\mainmatter
+
+\partimage{img/art1.png}
+\partquote{It’s much closer to Freud, the idea that there’s this thin film of consciousness and deliberate reasoning and all this seething stuff underneath.}{Geoffrey E.~Hinton, 2018}
+\part{Introduction}
+\label{part:intro}
+
+\input{chapters/1-introduction}
+\input{chapters/2-function-spaces}
+\input{chapters/3-correspondences}
+
+\partimage{img/art3.png}
+\partquote{The number of open questions concerning steepest ascent, its ubiquity in the literature of optimization, and its continued use in computation might lead the unwary to think that it was a good thing to do in practice; but we think that in the art of computation it should be considered as a last resort, faute de mieux, as Cauchy might have said.}{Philip Wolfe, 1969}
+\part{Optimisation}
+\label{part:opt}
+
+\input{chapters/4-optimisation-frameworks}
+\input{chapters/5-majorisation-minimisation}
+\input{chapters/6-neural-net-optimiser}
+
+\partimage{img/art0.png}
+\partquote{[The brain’s] underlying physical storage devices are capable of a thousand to a million times the capacity manifest in learned behavior... Possibly we should not be looking for models and mechanisms that produce storage economies, but rather ones in which marvels are produced by profligate use of capacity.}{Thomas K.~Landauer, 1986}
+\part{Generalisation}
+\label{part:gen}
+
+\input{chapters/7-learning-theory-frameworks}
+\input{chapters/8-pac-bayes-for-gps}
+\input{chapters/9-nn-bpm-correspondence}
+
+\end{document}

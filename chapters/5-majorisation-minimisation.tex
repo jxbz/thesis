@@ -1,0 +1,191 @@
+\begin{refsection}
+
+\chapter{Majorise-Minimise for Learning Problems}
+\label{chap:maj-min}
+
+\begin{tcolorbox}
+This chapter introduces two novel techniques for machine learning optimisation problems: \textit{functional majorisation} of the loss function and \textit{architectural perturbation bounds} for machine learning models. Together these techniques allow the majorise-minimise meta-algorithm to be applied to generic learning problems. This chapter uses the techniques to re-derive gradient descent and the Gauss-Newton method. Chapter \ref{chap:nn-maj-min} will use the techniques to derive architecture aware optimisation algorithms.
+\end{tcolorbox}
+
+While Chapter \ref{chap:perturb} dealt with somewhat generic optimisation algorithms, the focus of this chapter is a framework for deriving optimisation algorithms for machine learning problems. A central feature of this type of optimisation problem is that the loss function $\el$ is affected by the weight vector $w$ only indirectly through its appearance in the machine learning model $f(\cdot;w)$. This presents an opportunity: one can design optimisation algorithms that leverage the architecture of the machine learning model $f(\cdot;w)$ in interesting and useful ways. This idea will be termed \textit{architecture aware optimisation}.
+
+This chapter makes an important conceptual shift from considering a weight perturbation $\Delta w$ directly, as in Chapter \ref{chap:perturb}, to first studying the functional perturbation $\Delta f$  that is induced by the weight perturbation $\Delta w$:
+\begin{equation}
+        \Delta f(\cdot) \coloneqq f(\cdot;w+\Delta w)-f(\cdot;w).
+\end{equation}
+
+After making this shift, the following three-step framework is proposed for deriving architecture aware optimisation algorithms:
+\begin{enumerate}[label=Step \arabic*:, leftmargin=*, font=\sffamily]
+    \item \textit{Functional majorisation of the loss}. Expand the loss function as a series in functional perturbations, and majorise this expansion in terms of the size of functional perturbations. Lemma \ref{lem:sq-major} gives an example.
+    \item \textit{Architectural perturbation bounds.} Derive bounds that relate the size of functional perturbations to the size of weight perturbations by analysing the model architecture. Lemma \ref{lem:deep_perturbation_bounds} gives an example.
+    \item \textit{Majorise--minimise.} Substitute the architectural perturbation bounds into the functional majorisation of the loss and minimise with respect to the weight perturbation to obtain an optimisation algorithm.
+\end{enumerate}
+
+For the case of linear regression, this framework turns out to reproduce the classic gradient descent algorithm. Under the assumption that functional perturbations are linear in weight perturbations, the framework reproduces the classic \textit{Gauss-Newton method}, which is closely related to \textit{natural gradient descent}. The real payoff comes in Chapter \ref{chap:nn-maj-min}, where the framework is applied to deep neural networks---yielding architecture aware optimisation methods.
+
+\section{Expanding the loss as a series in functional perturbations}
+
+This section derives a novel series expansion of machine learning loss functions in terms of functional perturbations. The key idea is to Taylor expand the loss function in functional perturbations, and then to transform the linear terms in this expansion back to weight space. This last step renders the expansion more suitable for deriving optimisation algorithms that operate in weight space.
+
+This expansion relies on the fact that a machine learning loss function $\el$ can be regarded either as a function of a weight vector $w$ or a projected function $f_X(w)$ (Definition \ref{def:project}). With this in mind, this chapter will sometimes abuse notation by insisting that $\el(w) \equiv \el(f_X(w))$. Concretely, for square loss:
+\begin{equation*}
+    \el_2(w) = \frac{1}{2m}\cdot\norm{f_X(w)-Y}_2^2\;\;\implies\;\;
+    \el_2(f_X) = \frac{1}{2m}\cdot\norm{f_X-Y}_2^2.
+\end{equation*}
+
+To derive this expansion, it will help to define a notion of functional perturbation projected over a set of inputs:
+\begin{definition}[Projected functional perturbation] Given a function $f:\mathcal{X}\times \mathcal{W}\to\R$ and a collection of $m$ inputs $X=\{x_1,...,x_m\}$, the \textit{projected functional perturbation} $\Delta f_X\in\R^m$ corresponding to unperturbed weight vector $w$ and weight perturbation $\Delta w$ is given by the difference of projections:
+\begin{equation}
+    \Delta f_X \coloneqq f_X(w+\Delta w) - f_X(w).
+\end{equation}
+\end{definition}
+The projected functional perturbation $\Delta f_X$ implicitly depends on both a weight vector $w$ and a weight perturbation $\Delta w$, but this dependence is suppressed for brevity. Given this definition, the loss function may be expanded as follows:
+
+\begin{lemma}[Series expansion in functional perturbations]\label{lem:function-taylor} Given a function $f: \mathcal{X}\times \mathcal{W} \to \R$, a set of training inputs $X = \{x_1,...,x_m\}$, and a loss $\el$ that is an analytic function of the function space projection $f_X$, the following holds:
+    \begin{align}
+        &\el(w+\Delta w) -\left[ \el(w) + \nabla_w\el(w)^\top \Delta w\right] \nonumber \\
+        &\qquad= \nabla_{f_X} \el(f_X)^\top \left[\Delta f_X - \nabla_w f_X(w) \Delta w \right] + \half \Delta f_X^\top \nabla^2_{f_X} \el(f_X) \Delta f_X + ...
+    \end{align}
+\end{lemma}
+\begin{proof} First, Taylor expand the loss in functional perturbations $\Delta f_X$:
+    \begin{equation*}
+        \el(f_X+\Delta f_X) = \el(f_X) + \nabla_{f_X} \el(f_X)^\top \Delta f_X + \half \Delta f_X^\top \nabla^2_{f_X} \el(f_X) \Delta f_X + ...
+    \end{equation*}
+Next, make the substitutions $\el(f_X+\Delta f_X) \equiv \el(w+\Delta w)$ and $\el(f_X) \equiv \el(w)$:
+\begin{equation*}
+        \el(w+\Delta w) = \el(w) + \nabla_{f_X} \el(f_X)^\top \Delta f_X + \half \Delta f_X^\top \nabla^2_{f_X} \el(f_X) \Delta f_X + ...
+    \end{equation*}
+    Finally, subtract $\left[ \el(w) + \nabla_w\el(w)^\top \Delta w\right]$ from both sides and apply the chain rule $\nabla_w\el(w)^\top \Delta w = \nabla_{f_X}\el(f_X)^\top\nabla_w f_X \Delta w$ on the right-hand side.
+\end{proof}
+
+The requirement of Lemma \ref{lem:function-taylor} that the loss function be analytic in the function space projection $f_X$ is mild. Most common loss functions---including square loss (Definition \ref{def:sq-loss}) and logistic loss (Definition \ref{def:log-loss}) satisfy this requirement---even when the loss is not an analytic function of the weight vector $w$.
+
+\section{Functional majorisation of square loss}
+
+This section specialises the series expansion in functional perturbations (Lemma \ref{lem:function-taylor}) to the case of square loss. This is a particularly convenient example to consider, since the series expansion terminates at second order.
+
+\begin{lemma}[Expanding square loss in functional perturbations]\label{lem:sq-expand} The square loss (Proposition \ref{ex:sq-loss-projected}) admits the following expansion:
+    \begin{align}
+        &\el_2(w+\Delta w) -\left[ \el_2(w) + \nabla_w\el_2(w)^\top \Delta w\right] \nonumber \\
+        &\qquad\qquad= \frac{1}{m} (f_X-Y)^\top \left[\Delta f_X - \nabla_w f_X \Delta w \right] + \frac{1}{2m} \|\Delta f_X\|_2^2.
+    \end{align}
+\end{lemma}
+\begin{proof}
+For the square loss, $\nabla_{f_X} \el(f_X) = \frac{1}{m}(f_X-Y)$ and $\nabla^2_{f_X} \el(f_X) = \frac{1}{m} \cdot \Id$. All higher-order derivatives with respect to $f_X$ are zero. Substituting these relations in to Lemma \ref{lem:function-taylor} yields the result.
+\end{proof}
+
+By an application of the Cauchy-Schwarz inequality, Lemma \ref{lem:sq-expand} leads directly to the following majorisation of the square loss in terms of functional perturbations:
+
+\begin{lemma}[Functional majorisation of square loss]\label{lem:sq-major} The square loss (Proposition \ref{ex:sq-loss-projected}) admits the following majorisation:
+    \begin{align}\label{eq:sq-major}
+        &\el_2(w+\Delta w) -\left[ \el_2(w) + \nabla_w\el_2(w)^\top \Delta w\right] \nonumber \\
+        &\qquad\qquad\leq \frac{1}{m}\cdot \norm{f_X-Y}_2\cdot\norm{\Delta f_X - \nabla_w f_X \Delta w}_2 + \frac{1}{2m} \cdot \|\Delta f_X\|_2^2.
+    \end{align}
+\end{lemma}
+It is worth drawing attention to the three important quantities appearing on the right-hand side of Inequality \ref{eq:sq-major}:
+\begin{enumerate}
+    \item $\norm{f_X-Y}_2$ measures the size of the current misfit of the training sample.
+    \item $\norm{\Delta f_X - \nabla_w f_X \Delta w}_2$ measures the degree to which the projected functional perturbation $\Delta f_X$ deviates from its linearisation in $\Delta w$.
+    \item $\|\Delta f_X\|_2^2$ measures the size of the projected functional perturbation.
+\end{enumerate}
+
+While the current data misfit is usually easy to compute or estimate in a machine learning problem, the latter two quantities are considerably more subtle. This thesis suggests relating these quantities back to weight perturbations via \textit{architectural perturbation bounds}. In turn, this will open the door to architecture aware optimisation algorithms.
+
+\section{First application: Deriving gradient descent}
+
+As a first complete example of the framework proposed in this chapter, this section derives architectural perturbation bounds for linear regression. Combining these bounds with the majorisation of square loss (Lemma \ref{lem:sq-major}) leads back to the simple gradient descent optimisation algorithm. While in practice one might prefer to use less rudimentary means of fitting a linear regressor, the power of the argument outlined here is that it will generalise to deep networks.
+
+A linear regressor is a function $f:\R^d \times \R^d \to \R$ of the form:
+\begin{equation}\label{eq:lin-regress}
+    f(x;w) \coloneqq w^\top x.
+\end{equation}
+Suppose one wishes to fit a linear regressor to data $X=\{x_1,...,x_m\}$ by running iterative minimisation of the square loss (Example \ref{ex:sq-loss-projected}). Further, suppose that the data is constrained to the unit hypersphere: $x_1,...,x_m \in \Sph^{d-1}$. Then one may leverage the following architectural perturbation bounds:
+
+\begin{lemma}[Architectural perturbation bounds for linear regression]\label{lem:arch-perturb-linear} Given a set $X$ of $m$ training inputs supported on the hypersphere $\sqrt{d}\cdot\Sph^{d-1}$, the linear regressor of Equation \ref{eq:lin-regress} satisfies:
+\begin{align}
+    \|\Delta f_X\|_2 &\leq \sqrt{md} \cdot \norm{\Delta w}_2. \label{eq:lin-func-change} \\
+    \norm{\Delta f_X - \nabla_w f_X \Delta w}_2 &= 0; \label{eq:lin-lin}
+\end{align}
+\end{lemma}
+\begin{proof}
+By linearity of Equation \ref{eq:lin-regress}, the projected functional perturbation is:
+\begin{equation*}
+    \Delta f_X = (\Delta w^\top x_1, ..., \Delta w^\top x_m).
+\end{equation*}
+Inequality \ref{eq:lin-func-change} follows from an application of the Cauchy-Schwarz inequality:
+\begin{equation*}
+    \norm{\Delta f_X}_2^2 = \sum_{i=1}^m (\Delta w^\top x_i)^2 \leq \sum_{i=1}^m \norm{\Delta w}_2^2\cdot\norm{x_i}_2^2 = md \cdot \norm{\Delta w}_2^2,
+\end{equation*}
+where the last equality follows since $x_i \in \sqrt{d}\cdot \Sph^{d-1}$. Finally, Equation \ref{eq:lin-lin} follows by observing that:
+\begin{equation*}
+    \Delta f_X - \nabla_w f_X \Delta w= (\Delta w^\top x_1, ..., \Delta w^\top x_m) - (x_1,...,x_m)\cdot\Delta w = 0.
+\end{equation*}
+This completes the proof.
+\end{proof}
+
+By combining these architectural perturbation bounds (Lemma \ref{lem:arch-perturb-linear}) with the functional majorisation of the square loss (Lemma \ref{lem:sq-major}), one obtains:
+\begin{theorem}[Majorisation of the square loss for linear regression]
+\begin{align}
+        &\left|\el_2(w+\Delta w) -\left[ \el_2(w) + \nabla_w\el_2(w)^\top \Delta w\right]\right| \leq \frac{d}{2}\cdot \|\Delta w\|_2^2.
+    \end{align}
+\end{theorem}
+
+Then, by Theorem \ref{thm:gd}, the optimisation algorithm that minimises this majorisation with respect to $\Delta w$ is gradient descent with step-size $1/d$.
+
+\section{Second application: Deriving the Gauss-Newton method}
+\label{sec:ngd}
+
+This section shows that the classic \textit{Gauss-Newton method} \citep{gauss-newton}, which is closely related to \textit{natural gradient descent} \citep{revisiting-ngd,amari}, may be derived under the proposed framework in a straightforward manner. In particular, the Gauss-Newton method is the minimiser of the functional majorisation of square loss (Lemma \ref{lem:sq-major}) under the assumption that functional perturbations are linear in weight perturbations:
+
+\begin{assumption}[Functional perturbations are linear]\label{ass:func-linear}
+The functional perturbation $\Delta f_X$ corresponding to a weight perturbation $\Delta w$ is given by:
+\begin{equation}
+    \Delta f_X = \nabla_w f_X \Delta w.
+\end{equation}
+\end{assumption}
+In words: Assumption \ref{ass:func-linear} amounts to approximating the functional perturbation $\Delta f_X$ by its Taylor series in weight perturbations $\Delta w$ truncated to first order. When combined with the following definition, this assumption leads to very simple architectural perturbation bounds:
+
+\begin{definition}[Squared Jacobian]\label{def:sq-jacobian} Consider a machine learning model $f:\mathcal{X}\times\mathcal{W}\to\R$ and a set of $m$ training inputs $X=\{x_1,...,x_m\}$. The squared Jacobian $F_X$ is given by:
+\begin{equation}
+    F_X \coloneqq \frac{1}{m}\cdot\nabla_w f_X^\top \nabla_w f_X.
+\end{equation}
+To make Defintion \ref{def:sq-jacobian} more explicit, for a $d$-dimensional weight space $\mathcal{W}=\R^d$, the squared Jacobian is the $d\times d$ matrix whose $(ik)$th entry is given by:
+\begin{equation}
+    F_X^{ik} = \frac{1}{m}\cdot \sum_{j=1}^m \frac{\partial f(x_j;w)}{\partial w_i}\cdot\frac{\partial f(x_j;w)}{\partial w_k}.
+\end{equation}
+\end{definition}
+In the literature on natural gradient descent, the matrix $F_X$ is connected to the \textit{Fisher information matrix} of information geometry \citep{info-geom}. 
+
+With Definition \ref{def:sq-jacobian} in hand, the following lemma is immediate:
+\begin{lemma}[Architectural perturbation bounds for linear functional perturbations]\label{lem:arch-perturb-linear-functional}
+Under Assumption \ref{ass:func-linear}, given a set of $m$ inputs $X$, the following hold:
+\begin{align}
+    \|\Delta f_X\|_2 &= \sqrt{m}\cdot\sqrt{\Delta w^\top F_X \Delta w}; \label{eq:ngd-func-change} \\
+    \norm{\Delta f_X - \nabla_w f_X \Delta w}_2 &= 0. \label{eq:ngd-lin}
+\end{align}
+\end{lemma}
+Referring to the results in Lemma \ref{lem:arch-perturb-linear-functional} as architectural perturbation \textit{bounds} is technically a misnomer since these results are actually \textit{equalities}. The thesis persists with this misnomer to emphasise the connection to Lemmas \ref{lem:arch-perturb-linear} and \ref{lem:deep_perturbation_bounds}. These architectural perturbation bounds lead to the following majorisation:
+
+\begin{lemma}[Majorisation of square loss for linear functional perturbations]\label{lem:sq-major-ngd} 
+Under Assumption \ref{ass:func-linear}, the square loss (Proposition \ref{eq:sq-loss-projected}) admits majorisation:
+    \begin{align}\label{eq:sq-major-ngd} &\el_2(w+\Delta w) -\left[ \el_2(w) + \nabla_w\el_2(w)^\top \Delta w\right] \leq \frac{1}{2} \Delta w^\top F_X \Delta w.
+    \end{align}
+\end{lemma}
+\begin{proof}
+Substitute the results of Lemma \ref{lem:arch-perturb-linear-functional} into Lemma \ref{lem:sq-major}.
+\end{proof}
+
+Finally, the Gauss-Newton method is obtained:
+\begin{theorem}[Gauss-Newton method] Under Assumption \ref{ass:func-linear}, Lemma \ref{lem:sq-major-ngd} produced a majorisation of square loss given by Inequality \ref{eq:sq-major-ngd}. The minimiser of this majorisation is as follows:
+\begin{equation}
+    \argmin_{\Delta w}\left[\el_2(w) + \nabla_w \el_2(w)^\top\Delta w + \frac{1}{2}\cdot\Delta w^\top F_X \Delta w\right] = - F_X^{-1}\cdot\nabla_w \el_2(w).
+\end{equation}
+\end{theorem}
+\begin{proof}
+    Set to zero the derivative of the minimand on the left-hand side with respect to $\Delta w$: $\nabla_w \el_2(w) + F_X\Delta w = 0$. Solve for $\Delta w$ to yield the result.
+\end{proof}
+
+In summary: this chapter developed a framework for deriving optimisation algorithms for generic learning problems. The framework involves minimising a functional majorisation of the loss. Architectural perturbation bounds are employed to relate functional perturbation to weight perturbations. The chapter concluded by demonstrating that both gradient descent and the Gauss-Newton method may be re-derived under this framework. The next chapter will apply this framework to deep neural networks.
+
+\printbibliography[heading=subbibliography]
+\end{refsection}

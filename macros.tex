@@ -1,0 +1,152 @@
+\newcommand\mydots{\makebox[1em][c]{.\hfil.\hfil.}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\el}{\mathcal{L}}
+\newcommand{\gp}{\textsc{gp}}
+\newcommand{\pgp}{P_\mathrm{GP}}
+\newcommand{\qgp}{Q_\mathrm{GP}}
+\newcommand{\qsph}{Q_\mathrm{sph}}
+
+
+\newcommand\com{%
+    \tikz[radius=0.2em] {%
+        \fill (0,0) -- ++(0.2em,0) arc [start angle=0,end angle=90] -- ++(0,-0.4em) arc [start angle=270, end angle=180];%
+        \draw (0,0) circle;%
+    }%
+}
+
+\newcommand\cent{%
+    \tikz {%
+        \draw (0,0) circle (.2em);%
+        \draw[fill=black] (0,0) circle (.075em);
+    }%
+}
+
+
+
+
+\usepackage{dsfont}
+\usepackage{stmaryrd}
+
+
+\usepackage{verbatim}
+
+
+\newcommand{\gibbserr}{\eps_{\mathrm{Gibbs}}}
+\newcommand{\bayeserr}{\eps_{\mathrm{Bayes}}}
+\newcommand{\bpmerr}{\eps_{\mathrm{BPM}}}
+\newcommand{\kl}{\mathrm{KL}}
+
+
+
+
+
+
+
+\newcommand{\jatnote}[1]{\textcolor{red}{\textbf{[JAT: #1]}}}
+\newcommand{\jbnote}[1]{\textcolor{blue}{\textbf{[JB: #1]}}}
+\newcommand{\yynote}[1]{\textcolor{purple}{\textbf{[YY: #1]}}}
+
+
+
+\newcommand{\econst}{\mathrm{e}}
+\newcommand{\iunit}{\mathrm{i}}
+
+
+\newcommand{\eps}{\varepsilon}
+\newcommand{\oldphi}{\phi}
+\renewcommand{\phi}{\varphi}
+
+
+\newcommand{\vct}[1]{\bm{#1}}
+\newcommand{\mtx}[1]{\bm{#1}}
+\newcommand{\set}[1]{\mathsf{#1}}
+\newcommand{\coll}[1]{\mathcal{#1}}
+
+\newcommand{\half}{\tfrac{1}{2}}
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Sph}{\mathbb{S}}
+\newcommand{\F}{\mathbb{F}}
+
+\newcommand{\Sym}{\mathbb{H}}
+
+\newcommand{\comp}{\textsf{c}}
+
+
+\newcommand{\sign}{\operatorname{sign}}
+\newcommand{\erf}{\operatorname{erf}}
+\newcommand{\Normal}{\operatorname{Normal}}
+\newcommand{\Orthant}{\operatorname{Orthant}}
+
+
+\newcommand{\bigO}{O}
+
+
+\newcommand{\range}{\operatorname{range}}
+\newcommand{\nullsp}{\operatorname{null}}
+
+\newcommand{\lspan}{\operatorname{lin}}
+
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\trace}{\operatorname{tr}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\Id}{\mathbf{I}}
+
+\newcommand{\pinv}{\dagger}
+
+\newcommand{\psdle}{\preccurlyeq}
+\newcommand{\psdge}{\succcurlyeq}
+\newcommand{\psdlt}{\prec}
+\newcommand{\psdgt}{\succ}
+
+
+\newcommand{\abs}[1]{\vert {#1} \vert}
+\newcommand{\norm}[1]{\Vert {#1} \Vert}
+\newcommand{\ip}[2]{\langle {#1}, \ {#2} \rangle}
+\newcommand{\absip}[2]{\abs{\ip{#1}{#2}}}
+
+\newcommand{\abssq}[1]{\abs{#1}^2}
+\newcommand{\pnorm}[2]{\norm{#2}_{#1}}
+\newcommand{\normsq}[1]{\norm{#1}^2}
+\newcommand{\fnorm}[1]{\norm{#1}_{\mathrm{F}}}
+\newcommand{\fnormsq}[1]{\norm{#1}_{\mathrm{F}}^2}
+
+\newcommand{\labs}[1]{\left\vert {#1} \right\vert}
+\newcommand{\lnorm}[1]{\left\Vert {#1} \right\Vert}
+
+
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\idiff}{\,\diff}
+\newcommand{\ddx}[1]{\frac{\diff}{\diff{#1}}}
+\newcommand{\dydx}[2]{\frac{\diff{#1}}{\diff{#2}}}
+\newcommand{\pypx}[2]{\frac{\partial{#1}}{\partial{#2}}}
+
+
+\newcommand{\Expect}{\operatorname{\mathbb{E}}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+
+\newcommand{\Probe}{\mathbb{P}}
+\newcommand{\Prob}[1]{\Probe\left\{ #1 \right\}}
+\newcommand{\Probc}[2]{\Probe_{#1}\left\{ #2 \right\}}
+
+\newcommand{\condbar}{\, \vert \,}
+\newcommand{\lcondbar}{\, \big\vert \,}
+
+\newcommand{\normal}{\textsc{normal}}
+\newcommand{\bern}{\textsc{bern}}
+
+\newcommand{\comple}{\blacktriangleleft}
+
+\renewcommand{\normal}{\textsc{normal}}
+\newcommand{\uniform}{\textsc{unif}}
+
+
+\newcommand{\conv}{\operatorname{conv}}
+

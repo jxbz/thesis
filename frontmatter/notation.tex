@@ -1,0 +1,52 @@
+\extrachapter{Notation}
+
+\subsection*{Measuring size}
+
+\bgroup
+\def\arraystretch{1.5}
+\begin{tabular}{p{1in}p{4in}}
+$\displaystyle \|x\|_2$ & Euclidean norm of vector $x$\\
+$\displaystyle \|W\|_F$ & Frobenius norm of matrix $W$\\
+$\displaystyle \|W\|_*$ & operator norm of matrix $W$\\
+$\displaystyle \|f\|_\mathrm{RKHS}$ & reproducing kernel Hilbert space norm of function $f$\\
+\end{tabular}
+\egroup
+\vspace{0.5em}
+
+\subsection*{Describing data}
+\bgroup
+\def\arraystretch{1.5}
+\begin{tabular}{p{1in}p{4in}}
+$\displaystyle \mathcal{X}$ & input space\\
+$\displaystyle \mathcal{Y}$ &
+output space\\
+$\displaystyle X$ & collection of $m$ train inputs $X=\{x_1,...,x_m\}\in\mathcal{X}^m$\\
+$\displaystyle Y$ & vector of $m$ train labels $Y=[y_1,...,y_m]\in\mathcal{Y}^m$\\
+$\displaystyle S$ & train set $S = (X,Y) \equiv \{(x_1,y_1),...,(x_m,y_m)\}$\\
+$\displaystyle f_X$ & projected function $f_X = [f(x_1),...,f(x_m)]\in\mathcal{Y}^m$\\
+\end{tabular}
+\egroup
+\vspace{0.5em}
+
+\subsection*{Working with kernels and Gaussian processes}
+\bgroup
+\def\arraystretch{1.5}
+\begin{tabular}{p{1in}p{4in}}
+$\displaystyle k(\cdot,\cdot)$ & kernel function $k:\mathcal{X}\times\mathcal{X}\to\R$\\
+$\displaystyle K_{XX^\prime}$ & Gram matrix $K_{XX^\prime}^{ij} \coloneqq k(x_i,x^\prime_j)$\\
+$\displaystyle K_{xX}$ & Gram vector $K_{xX}^{i} \coloneqq k(x,x_i)$\\
+$\displaystyle K_{xx}$ & Gram scalar $K_{xx} \coloneqq k(x,x)$\\
+\end{tabular}
+\egroup
+\vspace{0.5em}
+
+\subsection*{Describing neural architecture}
+\bgroup
+\def\arraystretch{1.5}
+\begin{tabular}{p{1in}p{4in}}
+$\displaystyle \mathcal{W}$ & weight space\\
+$L$ & number of layers\\
+$\displaystyle d_l$ & width of $l$th layer\\
+$\displaystyle f(\cdot;\cdot)$ & neural network $f: \R^{d_0}\times\mathcal{W}\to\R^{d_L}$\\
+\end{tabular}
+\egroup

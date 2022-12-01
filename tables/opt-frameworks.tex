@@ -1,0 +1,13 @@
+\begin{table}[p]
+    \centering
+    \def\arraystretch{2}
+    \begin{tabular*}{\textwidth}{l @{\extracolsep{\fill}} cc}
+    \textbf{Optimiser} & \textbf{Truncation order, $\mathbf{k}$} &  \textbf{Majorisation, $\mathbf{h}$} \\
+    gradient descent & $k=1$ & $\displaystyle \frac{\lambda}{2} \cdot \norm{\Delta w}_2^2$ \\
+    mirror descent & $k=1$ & $\displaystyle h_\psi(w,w+\Delta w)$\\
+    cubic regularised Newton & $k=2$ & $\displaystyle \frac{\lambda}{6}\cdot\norm{\Delta w}_2^3$ \\
+    \end{tabular*}
+    \vspace{4ex}
+    \caption[Optimisation methods and their corresponding majorisations]{Optimisation methods and their corresponding majorisations. Each optimiser perturbs a weight vector $w\mapsto w+\Delta w_*$ where the perturbation $\Delta w_*$ is selected by solving $\Delta w_* = \argmin_{\Delta w}[\el^{(k)}(w+\Delta w) + h(w,\Delta w)]$. In this expression, $\el^{(k)}(w+\Delta w)$ refers to the Taylor series expansion of $\el(w+\Delta w)$ in perturbation $\Delta w$ truncated to $k$th order.}
+    \label{tab:trust}
+\end{table}

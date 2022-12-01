@@ -1,0 +1,69 @@
+\begin{refsection}
+
+\chapter{Finding the Foundations}
+
+\begin{tcolorbox}
+This chapter introduces the central goal of this thesis: to find the foundations of optimisation and generalisation in artificial neural networks.
+\end{tcolorbox}
+
+Research into artificial neural networks has drawn on various disciplines of science and engineering. Neuroscience and psychology have inspired basic learning frameworks \citep{Sutton1998} as well as specific neural architectures \citep{Fukushima2004NeocognitronAS}. Computer engineering has yielded hardware accelerators that enable both experimentation and applications at larger and larger scale \citep{steinkrau}. And mathematics and statistics offer the toolkits needed to understand the basic properties of learning systems. 
+
+From this breadth of scientific input, a paradigm known as \textit{deep learning} has emerged \citep{SCHMIDHUBER201585,deeplearning}. Deep learning has been driving progress in machine learning applications across science and industry over the course of the last decade. While certain applications deviate from the following schema, at its core, deep learning involves three steps:
+\begin{enumerate}
+    \item A large dataset of training examples is collected. These examples should in a sense span the richness of behaviour present in the task of interest.
+    \item An expressive neural network is constructed. A neural network consists of simple linear building blocks chained together and interspersed with simple elementwise nonlinearities to yield an overall highly complex and nonlinear function. The neural network is parameterised by the weights of the linear building blocks, and adjusting these weights adjusts the function that the network implements.
+    \item The error---otherwise known as the \textit{loss}---of the network over the training examples is evaluated, and the mathematical gradient of this error with respect to the network's weights is computed. The weights are then adjusted according to this gradient so as to reduce the error. This step is iterated until the error on the training examples has been made small. 
+\end{enumerate}
+
+The fascinating aspect of this procedure, and of learning in general, is that minimising error on \textit{train examples} is often sufficient to attain good performance on previously unseen \textit{test examples}. Furthermore, there is a certain conceptual simplicity: deep learning is just gradient descent on a neural network's error over a set of examples. Despite this simplicity, some of the most basic questions surrounding its underlying mathematics are not resolved. For example:
+
+\begin{enumerate}
+    \item[$\langle?\rangle$] \textit{Optimisation.} Given the gradient of a neural network's error, how far and in which direction should the network weights be best adjusted?
+    \item[$\langle?\rangle$] \textit{Generalisation.} Which of the functions that a neural network implements will perform best on unseen data. And why?
+\end{enumerate}
+
+In practice, these questions are usually addressed by trial-and-error over a set of heuristic techniques. For instance, a few variants of gradient descent are known to work quite well for neural networks. On a given task, one such variant will often perform well, but it is not known in advance which it will be \citep{crowded_valley}. Such trial-and-error has been highly successful---it is responsible for the wealth of deep learning applications that are seen today. Nevertheless, it is a contention of this thesis that, by answering these questions by way of a formal theory, there is potential both to simplify practical workflows as well as to unlock fundamentally new deep learning functionalities.
+
+Part of the reason that these questions are still open is that researchers do not know which theoretical framework should be used to answer them. For optimisation, researchers have attempted to apply such varied frameworks as information geometry \citep{amari} and mirror descent \citep{azizan2018stochastic}. For generalisation, the situation is similar \citep{Prez2020GeneralizationBF}. The aim of this thesis, then, is to develop foundational frameworks and principles that should be used to study learning in artificial neural networks. 
+
+These principles could be useful to the machine learning practitioner, since they could provide her with learning algorithms that generalise better while requiring less arbitrary tuning of hyperparameters. They could be useful to the computer hardware engineer, since they could help him design chips that more effectively support learning. And the principles could be useful to the neuroscientist who is seeking to transfer ideas ``upstream'' to the study of biological neural networks.
+
+The next two sections introduce the steps taken by this thesis toward tackling these questions of optimisation and generalisation in networks of neurons.
+
+\section{Optimisation via perturbation}
+
+\textit{Hyperparameter tuning} is the bane of every deep learning practitioner's existence. A large number of optimisation algorithms have been proposed for neural networks \citep{crowded_valley}, and each has a set of adjustable parameters known as \textit{hyperparameters} that affect the performance of the method. The \textit{learning rate} is the canonical example of a hyperparameter---this controls how strongly the network weights are adjusted in response to the gradient of the network's error. In the absence of compelling theoretical guidance on how to set the learning rate, best engineering practice is to try a logarithmic grid of possibilities and to see what works best \citep{Goodfellow-et-al-2016}. This tuning process inflates the computational cost of applications since a network must be trained many times in order to find a single network that works well.
+
+This thesis argues that the reason learning rate tuning in deep learning is so cumbersome is that a proper \textit{perturbation analysis} of neural architecture is missing. Roughly, what this means is that there is not a simple, computationally tractable means of estimating how sensitive the network's function is to adjustments of its weights. And even given such a sensitivity measure, there is no way to apply it to  derive optimisation algorithms for learning problems. To move beyond this situation, this thesis poses the following question:
+\begin{quote}
+    How far can the weights of a neural network be perturbed before the function of the network is damaged?
+\end{quote}
+
+Answering this question is important for optimisation, since an optimiser must not damage the network that it is training. But the question could be of more general interest, too. It gets at the \textit{precision} with which weights need to be stored, so it could be important for the computer hardware engineer to consider. Furthermore, the question could be interesting to the neuroscientist studying the dynamics of synaptic plasticity in living brains.
+
+This question is tackled in Part \ref{part:opt}. Chapter \ref{chap:perturb} surveys classic iterative optimisation algorithms and shows how they may be put on common footing by way of a perturbation analysis operating in the \textit{weight space} of the optimisation problem. Next, Chapter \ref{chap:maj-min} restricts attention to machine learning optimisation problems where the weights enter the optimisation problem via the machine learning model architecture. The chapter develops a novel technique termed \textit{functional majorisation} that is essentially a perturbation analysis of the loss function operating in the function space of the machine learning model. Finally, Chapter \ref{chap:nn-maj-min} develops novel \textit{architectural perturbation bounds} for deep neural networks. These bounds connect the size of weight perturbations to the size of the induced perturbation in the network function. They may be substituted into the functional majorisation of the loss function to obtain novel \textit{architecture aware} optimisation methods for deep neural networks. These methods address how the learning rate should depend on details such as the depth of the neural network that is being trained.
+
+In short, the thesis develops a perturbation analysis of deep networks through \textit{architectural perturbation bounds}, and shows how these bounds interact with the neural network's error via \textit{functional majorisation}. The resulting optimisation algorithms, obtained by minimising the functional majorisation of the error with respect to weight perturbations, constitute an application of the \textit{majorise-minimise meta-algorithm} \citep{mm} to neural networks.
+
+\section{Generalisation via aggregation}
+
+What allows a machine learning model that has been fit to a finite set of training data to generalise to test examples that it has never seen before? This is, in a sense, the fundamental question of learning. This question is particularly interesting in the case of neural networks that are vastly \textit{over-parameterised}, meaning that they have far more weights than training data. In this case, the neural network may have enough capacity to simply \textit{memorise} its training data, without performing any useful computational processing that could lead to generalisation \citep{Zhang2017UnderstandingDL}. So why, when these kinds of vastly over-parameterised networks are trained, do they generalise regardless?
+
+The study of generalisation in machine learning algorithms has a rich history. For instance, \textit{uniform convergence theory}---dating back to the work of \citet{vcpaper}---attempts to bound the difference between train and test error for all functions in the space of functions in which one is interested. Meanwhile \textit{PAC-Bayes theory} \citep{mcallester1999some} provides another means of bounding the generalisation gap of machine learning algorithms. Unlike uniform convergence bounds, PAC-Bayes bounds are on the average generalisation gap over a distribution of functions. PAC-Bayes bounds have been found to be significantly tighter than uniform convergence bounds \citep{seeger}, while incorporating information about both the training set and the machine learning model architecture in a natural way.
+
+Unfortunately, since PAC-Bayes bounds hold in expectation over distributions of functions, they say nothing about the generalisation of an individual function. To address this shortcoming, this thesis poses the following question:
+
+\begin{quote}
+    Given a neural network with the capacity to fit a set of training data in many ways, which of these functions should generalise best?
+\end{quote}
+    
+Answering this question is important for two practical reasons. First, most directly, in many applications one is interested in returning the single network that makes the best possible predictions. And second, less directly, in some applications one is interested in obtaining some measure of the uncertainty of the predictions of this best network. One idea for assessing uncertainty involves training an ensemble of networks in order to measure the variance across their predictions. But then it is important to have a means of ensuring that ensemble members do not all just collapse on to the single best generalising network.
+
+These issues are tackled in Part \ref{part:gen}. Chapter \ref{chap:g-theory} surveys some classic ideas in generalisation theory, including uniform convergence theory and PAC-Bayes theory. Chapter \ref{chap:gp-pac-bayes} develops a PAC-Bayes theory of Gaussian process classification. While this chapter contains little conceptual novelty in comparison to prior work \citep{seeger}, the chapter derives some novel analytical results that will be useful later on. Finally, Chapter \ref{chap:bpm} rekindles the idea of the \textit{Bayes point machine} \citep{bpms}. A Bayes point machine is a single classifier that approximates an ensemble's aggregate prediction. Since aggregation tends to improve ensemble performance, Bayes point machines are thought to generalise significantly better than other predictors. Via a detour through the neural network--Gaussian process correspondence \citep{radford}, the thesis finds that maximising the \textit{normalised margin} of a neural network's training predictions causes the network function to concentrate on a Bayes point machine.
+
+The main conceptual agenda of this part of the thesis is to put forward a novel perspective on generalisation in artificial neural networks as arising from a specific form of approximate Bayesian inference. In particular, by leveraging a statistical characterisation of the neural network function space known as the neural network--Gaussian process correspondence, it can be seen that a single neural network may itself approximate an aggregated predictor with good generalisation properties.
+
+But before all that, the remaining chapters of this first part of the thesis will formally introduce the machine learning problem, as well as the technical tools needed to study it. Chapter \ref{chap:functionspaces} formally introduces neural networks, Gaussian processes and kernel methods, while Chapter \ref{chap:correspondences} introduces various correspondences between these spaces of functions.
+
+\printbibliography[heading=subbibliography]
+\end{refsection}

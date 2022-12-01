@@ -1,0 +1,172 @@
+\begin{refsection}
+
+\chapter{PAC-Bayes for Gaussian Processes}
+\label{chap:gp-pac-bayes}
+
+\begin{tcolorbox}
+This chapter derives PAC-Bayes risk bounds for Gaussian process classification. While the specific calculations are novel, the general framework is due to \citet{seeger}. The calculations will be useful in Chapter \ref{chap:bpm}.
+\end{tcolorbox}
+
+Gaussian processes already contain many of the perplexing phenomena present in neural networks. They represent a function space of essentially unlimited expressivity, that nevertheless tends to generalise well when fit to data.
+
+PAC-Bayes theory applies naturally to Gaussian process classification since Gaussian processes come equipped with prior and posterior measures that can be used in the PAC-Bayes bound. \citet{seeger} developed an extensive PAC-Bayesian treatment of Gaussian process classification. Those results apply to a very flexible set of methods known as \textit{approximate Gaussian process classifiers}. Essentially, these methods use a Gaussian distribution to approximate an intractable Bayesian posterior. Since the PAC-Bayes bound applies to any posterior and not just the Bayesian posterior, PAC-Bayes theory can be straightforwardly applied to control the error of these approximate methods. 
+
+The focus of this chapter is on developing a simple and direct PAC-Bayesian treatment of Gaussian process classification for use in Chapter \ref{chap:bpm}.
+
+\section{Gaussian process classification}\label{sec:gpc}
+
+There is a simple way to convert a Gaussian process into a binary classifier. Given a training sample $S=(X,Y)$, one can simply draw functions from the prior $f\sim\gp(0,k)$ until a function is found that correctly classifies the training sample: $\sign f_X = Y$. This function can then be evaluated on novel test points.
+
+To develop a PAC-Bayesian generalisation theory of this procedure, one needs to write down the corresponding posterior and compute its KL-divergence with the prior. To ease this process, it is helpful to decompose the prior into two separate pieces, each defined implicitly via a sampling procedure:
+\begin{definition}[GP binary classifier prior]\label{def:gpc-prior} To construct the \textit{prior} $\pgp(\cdot)$ of a GP binary classifier, take train inputs $X$ and any other inputs $X^\prime$ and decompose:
+\begin{equation}
+    \pgp(f_{X^\prime}, f_X) = \pgp(f_{X^\prime}|f_X) \cdot \pgp(f_X).
+\end{equation}
+Now, define each piece of this decomposition separately:
+\begin{enumerate}
+    \item The measure $\pgp(f_X)$ corresponds to sampling train outputs:
+    \begin{equation}
+        f_X \sim \normal(0,K_{XX}).
+    \end{equation}
+    \item The measure $\pgp(f_{X^\prime}|f_X)$ corresponds to sampling the other outputs:
+    \begin{equation}
+        f_{X^\prime} \sim \normal(K_{X^\prime X}K_{XX}^{-1}f_X, K_{X^\prime X^\prime}-K_{X^\prime X}K_{XX}^{-1}K_{XX^\prime}).
+    \end{equation}
+\end{enumerate}
+\end{definition}
+One might worry that this definition of the prior depends on the training sample $X$, which is expressly not allowed. But this dependence is illusory: by Theorem \ref{thm:gp-cond}, this definition is equivalent to sampling  $f_{X^\prime}, f_X \sim \normal(0,K_{X^\prime \cup X\,X^\prime\cup X})$. Breaking the sampling procedure in two like this is helpful for making a direct comparison with the following definition of the posterior:
+
+\begin{definition}[GP binary classifier posterior]\label{def:gpc-posterior}
+To construct the \textit{posterior} $\qgp(\cdot)$ of a GP binary classifier, for train inputs $X$ and other inputs $X^\prime$, decompose:
+\begin{equation}
+    \qgp(f_{X^\prime}, f_X) = \qgp(f_{X^\prime}|f_X) \cdot \qgp(f_X).
+\end{equation}
+Now, define each piece of this decomposition separately:
+\begin{enumerate}
+    \item The measure $\qgp(f_X)$ corresponds to sampling train outputs:
+    \begin{equation}
+        f_X \sim \normal(0,K_{XX}\mid\sign f_X = Y).
+    \end{equation}
+    \item The measure $\qgp(f_{X^\prime}|f_X) \coloneqq \pgp(f_{X^\prime}|f_X)$ from Definition \ref{def:gpc-prior}.
+\end{enumerate}
+\end{definition}
+The posterior is identical to the prior, except that the distribution on train outputs is truncated to the orthant $\{f_X \in \R^m \mid \sign f_X = Y\}$. 
+
+It will also turn out to be both computationally and analytically convenient to define the following approximate posterior distribution:
+
+\begin{definition}[GP binary classifier spherised posterior]\label{def:gpc-posterior-spherised}
+For train inputs $X$ and other inputs $X^\prime$, the \textit{spherised posterior} $\qsph(\cdot)$ is defined by first decomposing:
+\begin{equation}
+    \qsph(f_{X^\prime}, f_X) = \qsph(f_{X^\prime}|f_X) \cdot \qsph(f_X).
+\end{equation}
+And, next, defining each piece of this decomposition separately:
+\begin{enumerate}
+    \item The measure $\qsph(f_X)$ corresponds to sampling train outputs:
+    \begin{equation}
+        f_X \sim \normal(0,\Id\cdot \abs{K_{XX}}^{1/m}\mid\sign f_X = Y).
+    \end{equation}
+    \item The measure $\qsph(f_{X^\prime}|f_X) \coloneqq \pgp(f_{X^\prime}|f_X)$ from Definition \ref{def:gpc-prior}.
+\end{enumerate}
+\end{definition}
+
+The spherised posterior modifies the posterior of Definition \ref{def:gpc-posterior} by replacing the truncated Gaussian distribution over train outputs $\qgp(f_X)$ with a truncated spherical Gaussian distribution $\qsph(f_X)$. The factor $\abs{K_{XX}}^{1/m}$ is included to match the variance scales of these two distributions.
+
+\section{The KL divergence between prior and posterior}\label{sec:kl}
+
+To construct PAC-Bayes bounds, one needs to compute the KL-divergence between these prior and posterior measures over functions. A lemma will help:
+\begin{lemma}[Chain rule for the KL divergence]\label{lem:kl-chain} Let $Q$ and $P$ denote measures over functions $f:\mathcal{X}\to\R$, for a finite input space $\mathcal{X}$. For a collection of $m$ inputs $X\in\mathcal{X}^m$, let $X^\mathsf{c}$ denote all inputs excluding $X$: $X^\mathsf{c}\coloneqq \mathcal{X}\setminus X$. Then:
+    \begin{align}
+        \kl\big(Q(f)\;||\;P(f)\big) = \kl\big(Q(f_{X^\mathsf{c}} | f_X)\;||\;P(f_{X^\mathsf{c}}|f_X)\big) + \kl\big(Q(f_X)\;||\;P(f_X)\big).
+    \end{align}
+\end{lemma}
+\begin{proof}
+First, a full function $f \equiv f_\mathcal{X} \equiv (f_{X^\mathsf{c}},f_X)$. The result follows by substituting the chain rule for joint probability into the definition of the KL divergence, separating the logarithm, and recognising the two KL divergences:
+    \begin{align*}
+    &\kl(Q(f)\;||\;P(f)) = \int \diff{f}\,Q(f) \log \frac{Q(f)}{P(f)}\\
+    & \qquad= \int\diff{f_X}\, Q(f_X)\int \diff{f_{X^\mathsf{c}}}\,Q(f_{X^\mathsf{c}}|f_X) \log \frac{Q(f_{X^\mathsf{c}}|f_X)\cdot Q(f_X)}{P(f_{X^\mathsf{c}}|f_X)\cdot P(f_X)}\\
+    & \qquad= \int\diff{f_X}\,Q(f_X) \left[\kl(Q(f_{X^\mathsf{c}} | f_X)\;||\;P(f_{X^\mathsf{c}}| f_X)) + \log \frac{Q(f_X)}{P(f_X)}\right]\\
+    & \qquad = \kl(Q(f_{X^\mathsf{c}} | f_X)\;||\;P(f_{X^\mathsf{c}}| f_X)) + \kl(Q(f_X)\;||\;P(f_X)).
+    \end{align*}
+    The proof is complete.
+\end{proof}
+
+Note that machine learning methods implemented on computers use finite input spaces. It is possible to generalise the lemma beyond finite input spaces, but this requires concepts from measure theory such as \textit{Radon-Nikodym derivatives} and the \textit{disintegration theorem}, which are beyond the scope of this thesis.
+
+The relevance of this result is that, since the second sampling steps of Definitions \ref{def:gpc-prior}, \ref{def:gpc-posterior} and \ref{def:gpc-posterior-spherised} are identical, it holds that:
+\begin{equation}
+    \kl(\qgp(f_{X^\mathsf{c}} | f_X)\;||\;P(f_{X^\mathsf{c}}| f_X))=\kl(\qsph(f_{X^\mathsf{c}} | f_X)\;||\;P(f_{X^\mathsf{c}}| f_X)) = 0.
+\end{equation}
+In turn, by Lemma \ref{lem:kl-chain}, this implies that:
+\begin{align}
+    \kl(\qgp(f)\;||\;P(f)) &= \kl(\qgp(f_X)\;||\;P(f_X)); \\
+    \kl(\qsph(f)\;||\;P(f)) &= \kl(\qsph(f_X)\;||\;P(f_X)).
+\end{align}
+These relations mean that, in order to evaluate the KL divergence between the full prior and posterior, one only needs to evaluate the KL divergence between the prior and posterior restricted to the training inputs. To derive these KL divergences, it is first helpful to define two quantities:
+
+\begin{definition}[Gaussian orthant probability]\label{def:gop} Given a training set $S=(X,Y)$ with binary labels $Y\in\{\pm1\}^m$, the \textit{Gaussian orthant probability} $P_Y$ is:
+\begin{equation}\label{eq:gop}
+    P_Y : = \Probe_{f_X \sim P_{\mathrm{GP}}}[\sign f_X = Y].
+\end{equation}
+\end{definition}
+This is termed an \textit{orthant probability} because for a training set $X$ consisting of $m$ examples, the set $\left\{f_X \in \R^m \;\middle|\; \sign f_X = Y\right\}$ is an orthant of $\R^m$.
+\begin{definition}[Kernel complexity]\label{def:k-complex} Given a kernel $k$ and a training set $S=(X,Y)$, the \textit{kernel complexity} $\mathcal{A}(k,X,Y)$ is given by:
+\begin{align}
+    \mathcal{A}(k,X,Y):= m\cdot\left(\log 2 - \frac{1}{2}\right) \;+ \qquad\qquad\qquad\qquad\qquad\qquad \nonumber\\
+    \abs{K_{XX}}^{1/m}\cdot\left[ \left(\frac{1}{2} - \frac{1}{\pi}\right)\trace K_{XX}^{-1} + \frac{1}{\pi} Y^T K_{XX}^{-1}Y \right].
+\end{align}
+\end{definition}
+Given these definitions, the following KL divergences may be obtained:
+\begin{lemma}[KL divergences for Gaussian process classification]\label{lem:kl-gp}
+Given a training set $S=(X,Y)$ with binary labels $Y\in\{\pm1\}^m$ and a kernel $k$:
+    \begin{align}
+        \kl(\qgp \;||\; \pgp) &= \log (1/P_Y) \leq \mathcal{A}(k,X,Y) = \kl(\qsph \;||\; \pgp).
+    \end{align}
+\end{lemma}
+\begin{proof} First, by Lemma \ref{lem:kl-chain} and the observation that the KL divergences from both $\qgp(f_{X^\mathsf{c}} | f_X)$ and $\qsph(f_{X^\mathsf{c}} | f_X)$ to $\pgp(f_{X^\mathsf{c}} | f_X)$ are zero, it is enough to relate $\kl(\qgp(f_X)\;||\;\pgp(f_X))$ to $\kl(\qsph(f_X)\;||\;\pgp(f_X))$.
+
+To establish the first equality, observe that since $\qgp(f_X)$ and $\pgp(f_X)$ differ on the support of $\qgp(f_X)$ only by normalisation constant $P_Y$, it holds that:
+\begin{equation*}
+    \kl(Q_{\mathrm{GP}}(f_X) \;||\; P_{\mathrm{GP}}(f_X)) = \Expect_{f_X\sim Q_{\mathrm{GP}}} \log(1/P_Y)= \log (1/P_Y).
+\end{equation*}
+The last equality is derived by first observing that:
+\begin{align*}
+    &\kl(\qsph (f_X) \;||\; \pgp(f_X)) = \Expect_{f_X \sim \qsph} \log \frac{2^n\cdot\econst^{-\half\norm{f_X}_2^2\cdot\abs{K_{XX}}^{-1/m}}}{\econst^{-\half f_X^\top K_{XX}^{-1}f_X}} \\
+    &\qquad\qquad= n \log 2 + \half \Expect_{f_X \sim \qsph} [f_X^\top (K_{XX}^{-1} - \Id\abs{K_{XX}}^{-1/m})f_X].
+\end{align*}
+To obtain $\mathcal{A}(k,X,Y)$, one must substitute in the following identity for half-Normal random variables:
+\begin{gather*}
+    \Expect_{f_X \sim \qsph}[f_X^i\cdot f_X^j] = \abs{K_{XX}}^{1/m}\cdot\left[\delta_{ij} + \tfrac{2}{\pi} Y_i Y_j (1-\delta_{ij})\right].
+\end{gather*}
+
+Finally, the inequality follows via:
+\begin{align*}
+    \kl(\qsph(f_X)\;||\;\pgp(f_X)) &= \Expect_{f_X\sim \qsph}\left[\log\tfrac{\qsph(f_X)}{\qgp(f_X)} + \log\tfrac{\qgp(f_X)}{\pgp(f_X)}\right]\\
+    &= \kl(\qsph(f_X)\;||\;\qgp(f_X)) + \log(1/P_Y),
+\end{align*}
+and noting that $\kl(\qsph(f_X)\;||\;\qgp(f_X)) \geq 0$.
+\end{proof}
+
+\section{PAC-Bayes bounds}
+
+Given the results in Sections \ref{sec:gpc} and \ref{sec:kl}, it is now a simple matter to write down PAC-Bayesian generalisation bounds for a Gaussian process binary classifier:
+
+\begin{theorem}[PAC-Bayes for Gaussian process classification]\label{thm:pac-bayes-gpc} Given a kernel $k$ and a training sample $S=(X,Y)$, recall the definitions of the kernel complexity $\mathcal{A}$ (Definition \ref{def:k-complex}) and the Gaussian orthant probability $P_Y$ (Definition \ref{def:gop}). Given a data distribution $\mathcal{D}$ over $\mathcal{X}\times\{\pm1\}$, for a fraction $1-\delta$ of training sets $S\overset{\text{iid}}{\sim}\mathcal{D}^m$, the following bounds hold simultaneously:
+\begin{align}
+\Probe_{f\sim \qgp, (x,y)\sim\mathcal{D}}[\sign f(x)\neq y] &\leq 1 - \exp \left[-\frac{\log 1/P_Y + \log (2m/\delta)}{m-1}\right] \label{eq:gpc-bound}\\
+& \leq 1 - \exp \left[-\frac{\mathcal{A}(k,X,Y) + \log (2m/\delta)}{m-1}\right];\label{eq:gpc-bound-slack}\\
+\Probe_{f\sim \qsph, (x,y)\sim\mathcal{D}}[\sign f(x)\neq y] &\leq 1 - \exp \left[-\frac{\mathcal{A}(k,X,Y) + \log (2m/\delta)}{m-1}\right]. \label{eq:sph-bound}
+\end{align}
+\end{theorem}
+\begin{proof} Instantiate Theorem \ref{thm:pac-bayes} with prior $\pgp(f)$, the two posteriors $\qgp(f)$ and $\qsph(f)$ and the KL divergences from Lemma \ref{lem:kl-gp}.
+\end{proof}
+
+According to Theorem \ref{thm:pac-bayes-gpc}, the posterior $\qgp$ enjoys a tighter risk bound than the spherised posterior $\qsph$. So why introduce the spherised posterior? There are two reasons:
+\begin{enumerate}
+    \item It is significantly easier to sample from the spherised posterior (Definition \ref{def:gpc-posterior-spherised}) than the original posterior (Definition \ref{def:gpc-posterior}).
+    \item Since the kernel complexity measure $\mathcal{A}(k,X,Y)$ is a closed-form analytical expression, whereas the Gaussian orthant probability $P_Y$ requires computing a high-dimensional integral, Inequality \ref{eq:sph-bound} is much easier to evaluate than Inequality \ref{eq:gpc-bound}.
+\end{enumerate}
+
+These results will be used in Chapter \ref{chap:bpm} to study generalisation in neural networks through the lens of the neural network--Gaussian process correspondence.
+
+\printbibliography[heading=subbibliography]
+\end{refsection}

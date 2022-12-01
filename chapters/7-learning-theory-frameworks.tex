@@ -1,0 +1,123 @@
+\begin{refsection}
+
+\chapter{Classic Generalisation Theories}
+\label{chap:g-theory}
+
+\begin{tcolorbox}
+This chapter provides an introduction to three classic generalisation theories: uniform convergence, algorithmic stability and PAC-Bayes. The material is expositional and is included for the reader's aid.
+\end{tcolorbox}
+
+The goal of this chapter is to review three classic theoretical frameworks for reasoning about generalisation of machine learning algorithms. The intention is not to provide a comprehensive survey, but more to provide an introduction to the landscape of thought surrounding generalisation. For each framework, the chapter discusses its general relevance to neural networks, including key hurdles that may need to be overcome to make the approach workable.
+
+The three frameworks that are considered are:
+\begin{enumerate}
+    \item \textit{Uniform convergence.} This framework seeks to assess the amount of training data needed such that train error converges to test error for all functions within a function space. To achieve this, the techniques tend to rely on limiting the size of the function space in some way.
+    \item \textit{Algorithmic stability.} This framework makes an important departure from uniform convergence by seeking to characterise generalisation of only those functions returned by a learning algorithm. In particular, the framework uses the insensitivity of the learning algorithm to modifications of its training set in order to guarantee generalisation.
+    \item \textit{PAC-Bayes.} This framework also departs from uniform convergence by assessing generalisation only of a user-specified ensemble of functions within the function space. What's more, the guarantee is on the average generalisation error over the ensemble, meaning that a small fraction of ensemble members are allowed to generalise poorly. The guarantee is good when the \textit{posterior measure} that defines the ensemble is sufficiently close to a \textit{prior measure} chosen before seeing the training data.
+\end{enumerate}
+
+\section{Uniform convergence}
+
+Uniform convergence is a classic framework for studying generalisation in machine learning. The name refers to the idea of test error converging to train error \textit{for all} functions in a function class. The framework dates back at least to the work of \citet{vcpaper}.
+
+The mechanism for proving uniform convergence bounds relies on the size of a function space being, in a sense, \textit{small} compared to the number of training examples. Since function spaces of interest may naïvely contain infinitely many functions, one needs to be careful about how one counts functions.
+
+In the case of binary classification, a suitable means of counting functions is to count the number of distinct binary labellings that the function space is able to assign to a finite set of inputs. This is known as the \textit{shattering coefficient}, which given the notion of \textit{function projection} (Definition \ref{def:project}), is easy to define:
+
+\begin{definition}[Shattering coefficient] Given a machine learning model $f:\mathcal{X}\times \mathcal{W}\to\R$, the \textit{shattering coefficient} $\mathcal{N}(f,m)$ is the largest number of binary labellings that $f$ can realise on any set of $m$ training inputs $X\in\mathcal{X}^m$:
+\begin{equation}
+    \mathcal{N}(f,m) \coloneqq \max_{X\in\mathcal{X}^m} \,\# \{\sign f_X(w) \mid w\in\mathcal{W}\}.
+\end{equation}
+\end{definition}
+
+Since there are only $2^m$ possible binary labellings of $m$ points, it holds that $\mathcal{N}(f,m) \leq 2^m$. A VC (Vapnik-Chervonenkis) bound relies on the machine learning model $f$ being so limited in its capacity that $\mathcal{N}(f,m) \ll 2^m$:
+
+\begin{theorem}[VC bound]\label{thm:vc} Consider a machine learning model $f:\mathcal{X}\times \mathcal{W}\to\R$ that makes classifications by binarising its output $f \mapsto \sign f$. For a training set $S \in (\mathcal{X} \times \{\pm1\})^m$ drawn iid from a data distribution $\mathcal{D}$, let $\el_{0/1}^S(w)$ denote the zero-one loss of weight vector $w\in\mathcal{W}$ with respect to training set $S$, and define $\el_{0/1}^\mathcal{D}(w)\coloneqq \Expect_{x,y\sim\mathcal{D}}\mathbb{I}[\sign f(x,w) \neq y]$ to be the average misclassification rate over $\mathcal{D}$. Then for a fraction $1-\delta$ of such training sets drawn in this way:
+\begin{equation}
+\text{For all } w\in\mathcal{W},\quad
+    \el_{0/1}^\mathcal{D}(w) \leq \el_{0/1}^S(w) + \sqrt{\frac{8}{m}\left(\log  \mathcal{N}(f,2m)+\log \frac{4}{\delta}\right)}.
+\end{equation}
+\end{theorem}
+
+This example of a VC bound is taken from the textbook of \citet{lwk}. A core feature of this bound is that the amount by which the train error can exceed the test error is bounded \textit{for all} weight vectors. Provided that the shattering coefficient saturates at some number of training examples $m$, then the bound is $\mathcal{O}(1/\sqrt{m})$.
+
+\subsection{Applicability to neural networks} 
+The relevance of a result like Theorem \ref{thm:vc} for deep learning practice is unclear. Often, neural networks operate in a regime where they can realise essentially any labelling of their training set \citep{Zhang2017UnderstandingDL}. This means that the shattering coefficient $\mathcal{N}(f,m) \approx 2^m$. In turn, the complexity term $\log \mathcal{N}(f,2m) / m$ appearing in Theorem \ref{thm:vc} does not decay as $m$ increases.
+
+One could resolve this problem by restricting the neural network function space, excluding the kinds of highly expressive function that allow the shattering coefficient $\mathcal{N}(f,2m)$ to approach $2^m$. It is not obvious how to accomplish this, although there have been proposals. For instance, \citet{specnorm} propose an approach based on restricting to neural network functions with bounded layerwise spectral norms. Such approaches have not yet led to non-vacuous generalisation guarantees for deep neural networks.
+
+\section{Algorithmic stability}
+
+The distinguishing feature of a uniform convergence bound is that the bound holds for all functions in the function space. Usually, in practice, one is interested in the generalisation performance of only a single function---the one that is returned by the learning algorithm. If the learning algorithm has special properties, then perhaps the function that it returns could generalise significantly better than other functions in the function space. This motivates the framework of \textit{algorithmic stability} \citep{stability}. To introduce this framework, it first helps to formally define the learning algorithm:
+
+\begin{definition}[Learning algorithm]\label{def:algorithm} A \textit{learning algorithm} $A$ is a deterministic mapping $S \mapsto A(S)$ from a training set $S$ to a weight vector $A(S)$.
+\end{definition}
+
+In practice, a learning algorithm need not be deterministic. For instance, the order in which the training set is fed into the algorithm will often affect the returned weight vector. But Definition \ref{def:algorithm} glosses over this detail.
+
+Algorithmic stability provides generalisation guarantees for learning algorithms that obey some kind of stability property. The following definition establishes a notion of stability for learning algorithms with respect to manipulating a training set $S$ by removing the $i$th example $S\mapsto S^{\backslash i}$:
+
+\begin{definition}[Uniform stability]\label{def:stability} Let $\ell(w,z)\in\R$ denote the loss incurred by weight vector $w\in \mathcal{W}$ on a single training example $z\in(\mathcal{X}\times\mathcal{Y})$. A learning algorithm $A$ has \textit{uniform stability} $\beta$ with respect to loss $\ell$ if the following holds: for all training sets $S\in(\mathcal{X}\times\mathcal{Y})^m$ and training examples $i\in\{1,...,m\}$, 
+\begin{equation}
+    \sup_{z\in \mathcal{X}\times\mathcal{Y}} \left|\ell\big(A(S),z\big) - \ell\big(A(S^{\backslash i}),z\big)\right|<\beta. 
+\end{equation}
+\end{definition}
+In words: if for any training set, removing any training example leads to a small change in loss on any test point, then the learning algorithm is uniformly stable. This definition leads to the following generalisation bound for regression:
+
+\begin{theorem}[Uniform stability bound]\label{thm:stability} Let $A$ be a learning algorithm with uniform stability $\beta$ with respect to a bounded loss $0\leq\ell(\cdot,\cdot)\leq 1$. For a data distribution $\mathcal{D}$, define the test loss $\el_\mathcal{D}(w)\coloneqq \Expect_{z\sim\mathcal{D}}\ell(w,z)$ and train loss $\el_S(w)\coloneqq \Expect_{z\sim\uniform(S)}\ell(w,z)$. Then, for a fraction $1-\delta$ of training sets $S\overset{\text{iid}}{\sim}\mathcal{D}^m$:
+\begin{equation}\label{eq:stability}
+    \el_\mathcal{D}(A(S)) \leq \el_S(A(S)) + 2\beta + (4m\beta + 1)\cdot\sqrt{\frac{\log 1/\delta}{2m}}.
+\end{equation}
+\end{theorem}
+
+This theorem is due to \citet{stability}. The theorem is most interesting for a learning algorithm with uniform stability $\beta = \mathcal{O}(1/m)$, for which the complexity term in Equation \ref{eq:stability} decays like $\mathcal{O}(1/\sqrt{m})$, similar to the VC bound of Theorem \ref{thm:vc}.
+
+\subsection{Applicability to neural networks}
+It is not obvious whether neural networks satisfy a stability condition such as Definition \ref{def:stability} at a non-trivial level $\beta$. Sometimes neural networks are seemingly able to interpolate any training set \citep{Zhang2017UnderstandingDL}, meaning that they are highly sensitive to the inclusion or exclusion of any particular data point.
+
+To make this framework workable for neural networks, one would need to produce a stability condition that is satisfied by a neural network. This could potentially be a weaker notion of stability than uniform stability, and some alternatives are proposed in the paper by \citet{stability}.
+
+\section{PAC-Bayes}
+
+PAC-Bayes theory presents another approach to introducing algorithm dependence into a generalisation bound. The theory makes a conceptual shift from the frameworks of both uniform convergence as well as algorithmic stability. It is worth introducing this new perspective in three steps:
+
+\begin{enumerate}[label=Step \arabic*:, leftmargin=*, font=\sffamily]
+    \item \textit{Specify prior belief.} Before seeing the training data, assign a prior measure $P$ to the function space. The idea is that functions that are believed more likely to explain the training data (upon its arrival) should be assigned higher probability under this prior measure.
+    \item \textit{Given data, construct a posterior.} Once the training data has arrived, a posterior measure $Q$ should be constructed that assigns higher probability to functions that now seem more likely. The posterior is, in a sense, \textit{algorithm dependent}: the choice of which functions to include in the posterior constitutes the learning algorithm. Although it can be, the posterior $Q$ need not be set to the Bayesian posterior for prior $P$.
+    \item \textit{Measure distance between prior and posterior.} According to PAC-Bayes theory, the closer the posterior $Q$ is to the prior $P$, the better the functions in the posterior $Q$ will generalise on average. The idea is that if the posterior and prior are very similar, then less information was extracted from the training data. To quantify this, a distance on probability measures is required, such as the KL divergence $\kl(Q||P)$.
+\end{enumerate}
+
+These three steps underlie the following theorem of \citet{Langford01boundsfor}:
+
+\begin{theorem}[PAC-Bayes bound]\label{thm:pac-bayes}
+Let $P$ be a prior over functions realised by a classifier and let $\mathcal{D}$ denote the data distribution. For a fraction $1-\delta$ of training sets $S\overset{\text{iid}}{\sim}\mathcal{D}^m$, the following holds for all posterior distributions $Q$:
+\begin{equation}
+    \kl(\bern_{S,Q}||\bern_{\mathcal{D},Q}) \leq \frac{\kl(Q||P) + \log (2m/\delta)}{m-1},
+\end{equation}
+where $\bern_{S,Q}$ is Bernoulli with probability $\Probe_{w\sim Q, (x,y)\sim\uniform(S)}[\sign f(x;w)\neq y]$ and $\bern_{\mathcal{D},Q}$ is Bernoulli with probability $\Probe_{w\sim Q, (x,y)\sim\mathcal{D}}[\sign f(x;w)\neq y]$.
+\end{theorem}
+In words: the KL divergence appearing on the left-hand side measures the distance between train error and test error averaged over the posterior. This is upper bounded by the KL divergence between prior and posterior (plus a logarithmic confidence term) divided by the number of training examples. 
+
+The following corollary may be slightly easier to parse than Theorem \ref{thm:pac-bayes}. It specialises to the \textit{realisable} setting of functions that attain zero train error.
+
+\begin{corollary}[Realisable PAC-Bayes]\label{cor:pac-bayes}
+Let $P$ be a prior over functions realised by a classifier. For a fraction $1-\delta$ of training sets $S\overset{\text{iid}}{\sim}\mathcal{D}^m$, the following holds for all posterior distributions $Q$ over functions that correctly classify $S$:
+\begin{equation}\label{eq:pac-bayes-corollary}
+\Probe_{w\sim Q, (x,y)\sim\mathcal{D}}[\sign f(x;w)\neq y] \leq 1 - \exp \left[-\frac{\kl(Q||P) + \log (2m/\delta)}{m-1}\right].
+\end{equation}
+\end{corollary}
+\begin{proof} For a posterior $Q$ that correctly classifies $S$, the Bernoulli random variable $\bern_{S,Q}$ is zero with probability one. In turn, this implies that:
+\begin{equation*}
+    \kl(\bern_{S,Q}||\bern_{\mathcal{D},Q})= - \log (1-\Probe_{w\sim Q, (x,y)\sim\mathcal{D}}[\sign f(x;w)\neq y]).
+\end{equation*}
+Substituting this relation into Theorem \ref{thm:pac-bayes} and rearranging yields the result.
+\end{proof}
+
+\subsection{Applicability to neural networks}
+
+PAC-Bayes has been shown to yield non-vacuous generalisation guarantees both for neural networks \citep{DR17} and for infinitely wide neural networks \citep{Prez2020GeneralizationBF,my-bpm}. Indeed, by inspection of Corollary \ref{cor:pac-bayes}, when $\kl(Q||P)$ is finite, the right-hand side of Inequality \ref{eq:pac-bayes-corollary} is smaller than one and the bound is never vacuous.
+
+One of the main problems with applying Theorem \ref{thm:pac-bayes} or Corollary \ref{cor:pac-bayes} to neural networks is that there is a mismatch between what is bounded and what matters in a standard machine learning problem. In particular, PAC-Bayes bounds are on the average test error over an ensemble of functions, described by posterior distribution $Q$. But in a standard machine learning scenario, one is most interested in the generalisation error of an individual function. Steps towards resolving this issue will be taken in Chapter \ref{chap:bpm}.
+
+\printbibliography[heading=subbibliography]
+\end{refsection}

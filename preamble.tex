@@ -1,0 +1,52 @@
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{ragged2e}
+
+\usepackage[hyphens]{url}
+\usepackage[backend=biber,natbib,style=ext-authoryear,maxbibnames=99,maxcitenames=2]{biblatex}
+\DeclareNameAlias{sortname}{given-family}
+\DeclareFieldFormat
+  [article,inbook,incollection,inproceedings,patent,thesis,unpublished]
+  {titlecase:title}{\MakeSentenceCase*{#1}}
+
+\usepackage[hidelinks,pdfusetitle]{hyperref}
+
+\usepackage{enumitem}
+\renewcommand{\labelenumi}{\arabic{enumi})}
+
+\usepackage{tcolorbox}
+\tcbset{colback={rgb,255:red,204;green,204;blue,255}, sharp corners, top=10pt, bottom=10pt, boxrule=1pt}
+
+\usepackage{tikz}
+\usetikzlibrary{tikzmark,calc}
+
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+
+
+\theoremstyle{definition}
+\newtheorem{definition}{\sffamily Definition}
+\numberwithin{definition}{chapter}
+\newtheorem{example}{\sffamily Example}
+\numberwithin{example}{chapter}
+\newtheorem{assumption}{\sffamily Assumption}
+\numberwithin{assumption}{chapter}
+\newtheorem{approximation}{\sffamily Approximation}
+\numberwithin{approximation}{chapter}
+\newtheorem{ansatz}{\sffamily Ansatz}
+\numberwithin{ansatz}{chapter}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{\sffamily Theorem}
+\numberwithin{theorem}{chapter}
+\newtheorem{proposition}{\sffamily Proposition}
+\numberwithin{proposition}{chapter}
+\newtheorem{lemma}{\sffamily Lemma}
+\numberwithin{lemma}{chapter}
+\newtheorem{corollary}{\sffamily Corollary}
+\numberwithin{corollary}{chapter}
